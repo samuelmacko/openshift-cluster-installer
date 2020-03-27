@@ -1,37 +1,92 @@
 #!/bin/sh
 
-TEMP=`getopt -o hcd:r: --long help,create-config,directory-name:,name-regex: -n 'cr.sh' -- "$@"`
+# default regex
+REGEX="smacko*"
 
-eval set -- "$TEMP"
+# default zone
+ZONE="devcluster.openshift.com."
 
-while true; do
-  case "$1" in
-    -h | --help ) help; break ;;
-    -c | --create-config ) CREATE_CONFIG=true; shift ;;
-    -d | --directory-name ) DIR_NAME=$2; [ ! -d "$DIR_NAME" ] && mkdir $DIR_NAME; shift 2 ;;
-    -r | --name-regex ) REGEX="$2"; ZONE="devcluster.openshift.com."; shift 2 ;;
-    -- ) shift; break ;;
-    * ) break ;;
+# default install config name
+INSTALL_CONFIG_NAME="install-config.yaml"
+
+# default cluster location
+DIR_NAME="$PWD/cluster"
+
+print_help () {
+	echo "Using https://github.com/matejvasek/delete-routes
+
+-h: print help
+-c: create a install-config.yaml and move it to pwd
+-d: directory, where to create a cluster, if none give, cluster will be installed in the default dir
+-r: destory cluster in the default dir
+-x: DNS entires in route 53 that satisfy given regex will be deleted, if none given, the default one will be used
+
+Install cluster into my_dir and create installer config (config will be moved do pwd):
+cluster-installer -d my_dir -c
+
+Destroy cluster in my_dir
+cluster-installer -d my_dir -r"
+}
+
+dir_check () {
+	[ ! -d "$DIR_NAME" ] && mkdir "$DIR_NAME"
+}
+
+delete_routes () {
+	delete-routes -name-regex "$REGEX" -zone "$ZONE"
+}
+
+move_install_config () {
+	if [ "$1" = "in" ]
+	then
+		[ -f "$INSTALL_CONFIG_NAME" ] && mv "$INSTALL_CONFIG_NAME" "$DIR_NAME" &>/dev/null
+	else
+		[ -f "$DIR_NAME/$INSTALL_CONFIG_NAME" ] && mv "$DIR_NAME"/"$INSTALL_CONFIG_NAME" "$PWD" &>/dev/null
+	fi
+}
+
+install () {
+	delete_routes
+	dir_check
+	move_install_config "in"
+	openshift-install create cluster --dir="$DIR_NAME"
+}
+
+create_config () {
+	openshift-install create install-config --dir="$DIR_NAME"
+	move_install_config
+}
+
+remove_cluster () {
+	delete_routes
+	openshift-install destroy cluster --dir "$DIR_NAME"
+}
+
+while getopts ":hcd:rx:" arg; do
+  case $arg in
+    h)
+	    print_help
+	    exit 0
+	    ;;
+    c)
+	    CREATE_CONFIG=true
+	    ;;
+    d)
+	    DIR_NAME="${OPTARG}"
+	    ;;
+	r)
+        REMOVE=true
+		remove_cluster
+		;;
+    x)
+        REGEX="${OPTARG}"
+        ;;
+    *)
+        print_help
+        exit 0
+        ;;
   esac
 done
 
-help () {
-	echo "Using https://github.com/matejvasek/delete-routes"
-	echo "-h, --help: print help"
-	echo "-c, --create-config: creates a install-config.yaml"
-	echo "-d, --directory-name: directory, where to create a cluster"
-	echo "-r, --name-regex: DNS entires in route 53 that satisfy given regex will be deleted"
-}
-
-if [ -z "$REGEX" ]
-then
-	echo "--name-regex is not specified, initial check for existing domain name will not take place"
-else
-	delete-routes -name-regex "$REGEX" -zone "$ZONE"
-fi
-
-
-openshift-install create cluster --dir=$DIR_NAME
-
-[ "$CREATE_CONFIG" = true ] && openshift-install create install-config --dir=$DIR_NAME
-
+[ -z "$REMOVE" ] && install
+[ -z "$CREATE_CONFIG" ] || create_config
