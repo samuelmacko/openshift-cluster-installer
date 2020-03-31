@@ -33,7 +33,7 @@ dir_check () {
 }
 
 delete_routes () {
-	delete-routes -name-regex "$REGEX" -zone "$ZONE"
+	yes yes | delete-routes -name-regex "$REGEX" -zone "$ZONE"
 }
 
 move_install_config () {
@@ -88,5 +88,5 @@ while getopts ":hcd:rx:" arg; do
   esac
 done
 
-[ -z "$REMOVE" ] && install
+[ -z "$REMOVE" ] && install; oc login --username='kubeadmin'
 [ -z "$CREATE_CONFIG" ] || create_config
