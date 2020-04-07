@@ -47,6 +47,7 @@ move_install_config () {
 
 install () {
 	delete_routes
+	rm -rf "$DIR_NAME"
 	dir_check
 	move_install_config "in"
 	openshift-install create cluster --dir="$DIR_NAME"
@@ -60,6 +61,7 @@ create_config () {
 remove_cluster () {
 	delete_routes
 	openshift-install destroy cluster --dir "$DIR_NAME"
+	rm -rf "$DIR_NAME"
 }
 
 while getopts ":hcd:rx:" arg; do
