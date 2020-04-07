@@ -39,7 +39,7 @@ delete_routes () {
 move_install_config () {
 	if [ "$1" = "in" ]
 	then
-		[ -f "$INSTALL_CONFIG_NAME" ] && mv "$INSTALL_CONFIG_NAME" "$DIR_NAME" &>/dev/null
+		[ -f "$INSTALL_CONFIG_NAME" ] && cp "$INSTALL_CONFIG_NAME" "$DIR_NAME" &>/dev/null
 	else
 		[ -f "$DIR_NAME/$INSTALL_CONFIG_NAME" ] && mv "$DIR_NAME"/"$INSTALL_CONFIG_NAME" "$PWD" &>/dev/null
 	fi
