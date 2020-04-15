@@ -90,5 +90,5 @@ while getopts ":hcd:rx:" arg; do
   esac
 done
 
-[ -z "$REMOVE" ] && install; oc login --username='kubeadmin'
+[ -z "$REMOVE" ] && install; oc login --username='kubeadmin' < "$DIR_NAME"/auth/kubeadmin_password
 [ -z "$CREATE_CONFIG" ] || create_config
