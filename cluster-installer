@@ -64,6 +64,33 @@ remove_cluster () {
 	rm -rf "$DIR_NAME"
 }
 
+login () {
+	case "$OSTYPE" in
+		solaris*)
+			PASSWORD_FILE="auth/kubeadmin_password"
+			;;
+		darwin*)
+			PASSWORD_FILE="auth/kubeadmin-password"
+			;; 
+		linux*)
+			PASSWORD_FILE="auth/kubeadmin_password"
+			;;
+		bsd*)
+			PASSWORD_FILE="auth/kubeadmin_password"
+			;;
+		msys*)
+			echo "Not supported, but you can try"
+			PASSWORD_FILE="auth/kubeadmin_password"
+			;;
+		*)
+			echo "Not supported, but you can try"
+			PASSWORD_FILE="auth/kubeadmin_password"
+			;;
+	esac
+	
+	oc login --username='kubeadmin' < "$DIR_NAME"/"$PASSWORD_FILE"
+}
+
 while getopts ":hcd:rx:" arg; do
   case $arg in
     h)
@@ -72,6 +99,7 @@ while getopts ":hcd:rx:" arg; do
 	    ;;
     c)
 	    CREATE_CONFIG=true
+		[ -f "$INSTALL_CONFIG_NAME" ] && rm "$INSTALL_CONFIG_NAME"
 	    ;;
     d)
 	    DIR_NAME="${OPTARG}"
@@ -90,5 +118,5 @@ while getopts ":hcd:rx:" arg; do
   esac
 done
 
-[ -z "$REMOVE" ] && install; oc login --username='kubeadmin' < "$DIR_NAME"/auth/kubeadmin_password
+[ -z "$REMOVE" ] && install && login
 [ -z "$CREATE_CONFIG" ] || create_config
